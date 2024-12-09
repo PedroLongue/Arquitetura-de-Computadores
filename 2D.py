@@ -64,18 +64,6 @@ def topology(to_alvo):
                       [[0], [1], [2], [2], [2], [1], [0]],
                       [[0], [1], [1], [0], [1], [1], [0]],
                       [[0], [0], [0], [0], [0], [0], [0]]])
-    elif to_alvo == "alvo_3n_3D_1":
-        n = 3
-        A = np.zeros((3, 3, 3))
-        A[:, :, 0] = [[0, 0, 0], [1, 1, 1], [2, 2, 2]]
-        A[:, :, 1] = [[0, 0, 0], [1, 1, 1], [2, 2, 2]]
-        A[:, :, 2] = [[0, 0, 0], [1, 1, 1], [2, 2, 2]]
-    elif to_alvo == "alvo_3n_3D_2":
-        n = 3
-        A = np.zeros((4, 4, 3))
-        A[:, :, 0] = [[2, 2, 1, 1], [2, 0, 0, 1], [2, 0, 0, 1], [2, 2, 1, 1]]
-        A[:, :, 1] = [[2, 2, 1, 1], [2, 0, 0, 1], [2, 0, 0, 1], [2, 2, 1, 1]]
-        A[:, :, 2] = [[2, 2, 1, 1], [2, 0, 0, 1], [2, 0, 0, 1], [2, 2, 1, 1]]
     elif to_alvo == "alvo_I2":
         n = 2
         A = np.zeros((12, 12, 2))
@@ -259,10 +247,10 @@ def aco_optimize(to_alvo, max_cycles=150, ax=None):
 
     # Gerar o gráfico do tempo de execução
     plt.figure(figsize=(10, 6))
-    plt.plot(errors, label="Erro durante a execução")
-    plt.xlabel("Ciclos")
-    plt.ylabel("Erro")
-    plt.title("Evolução do Erro durante a Execução da Otimização")
+    plt.plot(errors, label="Error during execution - 2D")
+    plt.xlabel("Cycles")
+    plt.ylabel("Error")
+    plt.title("Error Evolution during Optimization Execution - 2D")
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -287,7 +275,7 @@ def main():
     selected_target = tk.StringVar()
     selected_target.set("alvo_I")
 
-    targets = ["alvo_I", "alvo_U", "alvo_G", "alvo_dama", "alvo_3n_2D_1", "alvo_3n_2D_2"]
+    targets = ["alvo_I", "alvo_U", "alvo_G", "alvo_dama"]
     target_menu = ttk.Combobox(root, textvariable=selected_target, values=targets)
     target_menu.bind("<<ComboboxSelected>>", update_goal_topology)
     target_menu.pack()

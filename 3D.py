@@ -179,6 +179,8 @@ def aco_optimize_3d(to_alvo, max_cycles=200, ax=None, ax2=None):
     plottopology(A, 3, 1, ax2)
     ax2.set_title('Topologia Alvo')
 
+    errors = []
+
     for cycle in range(max_cycles):
         tabu = np.zeros((m, nlA, ncA, pA), dtype=int)
 
@@ -236,10 +238,21 @@ def aco_optimize_3d(to_alvo, max_cycles=200, ax=None, ax2=None):
 
         plt.pause(0.01)  # Pausa para renderizar a figura
 
+        errors.append(best_error)
         # Se o erro for zero, interrompe o loop
         if best_error == 0:
             print(f"Convergiu no ciclo {cycle}")
             break
+    
+    # Gera o gráfico de Erro x Ciclo
+    plt.figure(figsize=(10, 6))
+    plt.plot(errors, label="Error during execution - 3D")
+    plt.xlabel("Cycles")
+    plt.ylabel("Error")
+    plt.title("Error Evolution during Optimization Execution - 3D")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 # Função principal com interface gráfica
 def main():
