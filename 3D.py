@@ -3,94 +3,181 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import tkinter as tk
 
-def topology_3d(to_alvo):
+# Definição de variáveis globais
+hplot = None
+htext = None
+
+def topology(to_alvo):
     """
-    Define a matriz de topologia 3D alvo com base no caso escolhido.
+    A    : topology matrix
+    nlA  : number of lines of A
+    ncA  : number of columns of A
+    pA   : depth of A
+    n    : type (number) of materials
     """
-    A, n = None, None
-    if to_alvo == "alvo_3n_3D_1":
+
+    if to_alvo == 'alvo_3n_3D_1':
         n = 3
-        A = np.zeros((3, 3, 3))  # Criando um cubo 3x3x3
-
-        # Definindo as cores nas camadas (como solicitado)
-        # Primeira camada (z=0) - Azul
-        A[:, :, 0] = 2  # Azul
-
-        # Segunda camada (z=1) - Amarelo
-        A[:, :, 1] = 1  # Amarelo
-
-        # Terceira camada (z=2) - Verde (Agora usando 3 para o verde)
-        A[:, :, 2] = 3  # Verde
-
-    elif to_alvo == "alvo_3n_3D_2":
+        A = np.array([
+            [
+                [0, 0, 0], 
+                [1, 1, 1], 
+                [2, 2, 2]
+            ],
+                    
+            [
+                [0, 0, 0], 
+                [1, 1, 1], 
+                [2, 2, 2]
+            ],
+                    
+            [
+                [0, 0, 0], 
+                [1, 1, 1], 
+                [2, 2, 2]
+            ]
+        ])
+    elif to_alvo == 'alvo_3n_3D_2':
         n = 3
-        A = np.zeros((4, 4, 3))
-        A[:, :, 0] = np.array([[2, 2, 1, 1], [2, 0, 0, 1], [2, 0, 0, 1], [2, 2, 1, 1]])
-        A[:, :, 1] = np.array([[2, 2, 1, 1], [2, 0, 0, 1], [2, 0, 0, 1], [2, 2, 1, 1]])
-        A[:, :, 2] = np.array([[2, 2, 1, 1], [2, 0, 0, 1], [2, 0, 0, 1], [2, 2, 1, 1]])
+        A = np.array([
+            [
+                [2, 2, 1, 1],  # Camada 1
+                [2, 0, 0, 1],
+                [2, 0, 0, 1],
+                [2, 2, 1, 1]
+            ],
+            [
+                [2, 2, 1, 1],  # Camada 2
+                [2, 0, 0, 1],
+                [2, 0, 0, 1],
+                [2, 2, 1, 1]
+            ],
+            [
+                [2, 2, 1, 1],  # Camada 3
+                [2, 0, 0, 1],
+                [2, 0, 0, 1],
+                [2, 2, 1, 1]
+            ]
+        ])
     else:
-        raise ValueError(f"Topo '{to_alvo}' não implementado.")
-    
-    return A, *A.shape, n
+        raise ValueError("The topology specified does not exist!")
 
-def plot_topology_3d(A, title="Topology", cycle=None, ax=None):
-    """
-    Plota a topologia 3D.
-    """
-    nlA, ncA, pA = A.shape
-    ax.clear()  # Limpa o eixo antes de desenhar a nova topologia
-    
-    # Mapeamento de cores para valores
-    color_map = {1: 'yellow', 2: 'blue', 3: 'green'}  # Ajuste aqui para a cor verde (3)
-    
-    for x in range(nlA):
-        for y in range(ncA):
-            for z in range(pA):
-                if A[x, y, z] != 0:  # Só desenha onde a célula tem valor diferente de 0
-                    plot_cube(ax, x, y, z, color_map[A[x, y, z]])  # Usa o valor para a cor
+    # Shape of the array
+    nlA, ncA, pA = A.shape if A.ndim == 3 else (*A.shape, 1)
+    return A, nlA, ncA, pA, n
 
-    ax.set_title(f"{title} Cycle: {cycle}" if cycle else title)
-    ax.set_xlim(0, nlA)  # Ajuste do limite de x
-    ax.set_ylim(0, ncA)  # Ajuste do limite de y
-    ax.set_zlim(0, pA)  # Ajuste do limite de z
-    plt.draw()  # Atualiza o gráfico
+def get3Dpoints(vec, coordinates, orientation=[0, 0, 0]):
+    coordinates = [1/2 * coordinates[0], 1/2 * coordinates [1], 1/2 * coordinates[2]]
 
-def plot_cube(ax, x, y, z, color):
+    # Criação da matriz de rotação
+    rot_mat = np.array([
+        [
+            np.cos(orientation[1]) * np.cos(orientation[2]),
+            -np.cos(orientation[1]) * np.sin(orientation[2]),
+            np.sin(orientation[1])
+        ],
+        [
+            np.sin(orientation[0]) * np.sin(orientation[1]) * np.cos(orientation[2]) + np.cos(orientation[0]) * np.sin(orientation[2]),
+            -np.sin(orientation[0]) * np.sin(orientation[1]) * np.sin(orientation[2]) + np.cos(orientation[0]) * np.cos(orientation[2]),
+            -np.sin(orientation[0]) * np.cos(orientation[1])
+        ],
+        [
+            -np.cos(orientation[0]) * np.sin(orientation[1]) * np.cos(orientation[2]) + np.sin(orientation[0]) * np.sin(orientation[2]),
+            np.cos(orientation[0]) * np.sin(orientation[1]) * np.sin(orientation[2]) + np.sin(orientation[0]) * np.cos(orientation[2]),
+            np.cos(orientation[0]) * np.cos(orientation[1])
+        ]
+    ])
+
+    # Aplicação da transformação
+    transformed_coordinates = np.dot(rot_mat, coordinates)
+    erg_coordinates = vec + transformed_coordinates
+
+    return erg_coordinates
+
+def plotcube(coordinates, size, orientation, color8, transparency, LineOnOff, ax):
     """
-    Plota um cubo no espaço 3D com a cor especificada.
+    Função para plotar um cubo 3D.
     """
-    # As coordenadas dos vértices de um cubo
-    vertices = [
-        [x - 0.5, y - 0.5, z - 0.5],
-        [x + 0.5, y - 0.5, z - 0.5],
-        [x + 0.5, y + 0.5, z - 0.5],
-        [x - 0.5, y + 0.5, z - 0.5],
-        [x - 0.5, y - 0.5, z + 0.5],
-        [x + 0.5, y - 0.5, z + 0.5],
-        [x + 0.5, y + 0.5, z + 0.5],
-        [x - 0.5, y + 0.5, z + 0.5],
-    ]
+    # Calcula os 8 vértices
+    c1 = get3Dpoints(coordinates, [-size[0], -size[1], -size[2]], orientation)
+    c2 = get3Dpoints(coordinates, [size[0], -size[1], -size[2]], orientation)
+    c3 = get3Dpoints(coordinates, [-size[0], -size[1], size[2]], orientation)
+    c4 = get3Dpoints(coordinates, [size[0], -size[1], size[2]], orientation)
+    c5 = get3Dpoints(coordinates, [-size[0], size[1], -size[2]], orientation)
+    c6 = get3Dpoints(coordinates, [size[0], size[1], -size[2]], orientation)
+    c7 = get3Dpoints(coordinates, [-size[0], size[1], size[2]], orientation)
+    c8 = get3Dpoints(coordinates, [size[0], size[1], size[2]], orientation)
+
+    # Definir as faces do cubo (cada face é um quadrilátero)
     faces = [
-        [vertices[j] for j in [0, 1, 2, 3]],  # Parte inferior
-        [vertices[j] for j in [4, 5, 6, 7]],  # Parte superior
-        [vertices[j] for j in [0, 1, 5, 4]],  # Frente
-        [vertices[j] for j in [2, 3, 7, 6]],  # Trás
-        [vertices[j] for j in [1, 2, 6, 5]],  # Lado direito
-        [vertices[j] for j in [4, 7, 3, 0]],  # Lado esquerdo
+        [c1, c2, c4, c3],  # Face inferior
+        [c5, c6, c8, c7],  # Face superior
+        [c1, c2, c6, c5],  # Face frontal
+        [c3, c4, c8, c7],  # Face traseira
+        [c1, c3, c7, c5],  # Face esquerda
+        [c2, c4, c8, c6],  # Face direita
     ]
-    ax.add_collection3d(
-        Poly3DCollection(faces, alpha=0.7, facecolors=color)  # Coloca a cor para o cubo
-    )
 
-def aco_optimize_3d(to_alvo, max_cycles=150, ax=None):
+    # Cria uma Poly3DCollection para desenhar o cubo
+    cube = Poly3DCollection(faces, facecolors=color8, linewidths=1, edgecolors='k', alpha=transparency)
+    
+    # Adiciona a coleção de faces ao gráfico 3D
+    ax.add_collection3d(cube)
+
+def plottopology(A, n, fig, ax, *args):
+    """
+    Função para plotar a topologia baseada em uma matriz A, e outras informações.
+    """
+    global hplot, htext
+
+    nlA, ncA, pA = A.shape if A.ndim == 3 else (*A.shape, 1)
+
+    if fig == 1:
+        # Criar o gráfico com a topologia objetivo
+        ax.set_box_aspect([1, 1, 1])  # Assegura que a caixa tenha proporções iguais
+        ax.set_title('Goal Topology')
+        ax.clear()
+
+        if pA == 1:
+            # Se pA == 1, mostramos o gráfico 2D
+            ax.imshow(A, cmap='gray', interpolation='nearest')
+            ax.axis('off')  # Desativa os eixos para não mostrar números ou grades
+            plt.show()
+        else:
+            # Plotando a estrutura 3D
+            d1 = ncA + 1
+            d2 = pA + 1
+            d3 = nlA + 1
+
+            
+            ax.plot3D([0, d1, d1, 0, 0, d1, d1, 0], 
+                      [0, 0, 0, 0, d2, d2, d2, d2], 
+                      [0, 0, d3, d3, 0, 0, d3, d3], 'k.', markersize=0.1)
+
+            # Plotando os cubos dentro da topologia
+            for p in range(min(pA, A.shape[2])-1, -1, -1):
+                for i in range(min(nlA, A.shape[0])-1, -1, -1):
+                    for j in range(min(ncA, A.shape[1])):
+                        if n > 1:
+                            color_value = A[i, j, p] / (n - 1)
+                            rgba = (color_value, color_value, color_value, 0.5)
+                            plotcube([j, p, i], [1, 1, 1], [0, 0, 0], [rgba] * 8, 0.5, 1, ax)
+            
+            plt.draw()
+
+def aco_optimize_3d(to_alvo, max_cycles=200, ax=None, ax2=None):
     """
     Implementa a Otimização por Colônia de Formigas para Topologia 3D.
     """
-    A, nlA, ncA, pA, n = topology_3d(to_alvo)
+    A, nlA, ncA, pA, n = topology(to_alvo)
     m = 50  # Número de formigas
     tau = np.ones((n, nlA * ncA * pA)) / n  # Inicializa os feromônios
     best_topology = None
     best_error = float("inf")
+
+    # Desenha a topologia alvo na figura
+    plottopology(A, 3, 1, ax2)
+    ax2.set_title('Topologia Alvo')
 
     for cycle in range(max_cycles):
         tabu = np.zeros((m, nlA, ncA, pA), dtype=int)
@@ -144,8 +231,9 @@ def aco_optimize_3d(to_alvo, max_cycles=150, ax=None):
                         tau[tabu[k, x, y, z], index] += 1 / fitness[k]
 
         # Atualiza a topologia a cada ciclo
-        plot_topology_3d(best_topology, "Topologia Encontrada", cycle, ax)
+        plottopology(best_topology, 3, 1, ax)
         ax.set_title(f"Ciclo: {cycle}, Erro: {best_error:.2f}")
+
         plt.pause(0.01)  # Pausa para renderizar a figura
 
         # Se o erro for zero, interrompe o loop
@@ -157,7 +245,7 @@ def aco_optimize_3d(to_alvo, max_cycles=150, ax=None):
 def main():
     def start_aco():
         to_alvo = selected_target.get()
-        aco_optimize_3d(to_alvo, ax=ax)
+        aco_optimize_3d(to_alvo, ax=ax, ax2=ax2)
 
     root = tk.Tk()
     root.title("Otimização ACO 3D")
@@ -170,11 +258,16 @@ def main():
     start_button = tk.Button(root, text="Iniciar ACO", command=start_aco)
     start_button.pack()
 
-    # Inicializar a visualização 3D com matplotlib
+    # Cria a figura
     fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection="3d")
 
-    # Exibir a interface Tkinter
+    # Adiciona o gráfico alvo (à esquerda)
+    ax2 = fig.add_subplot(121, projection='3d')
+
+    # Adiciona o gráfico ACO (à direita)
+    ax = fig.add_subplot(122, projection='3d')
+
+    # Exibe a interface Tkinter
     root.mainloop()
 
 if __name__ == "__main__":
