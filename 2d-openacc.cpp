@@ -1,23 +1,23 @@
 #include <iostream>
 #include <vector>
-#include <cmath>
-#include <cstdlib>
-#include <ctime>
+#include <fstream>
+#include <string>
 #include <map>
-#include <stdexcept>
-#include <openacc.h> // Biblioteca para paralelismo
+#include <random>
+#include <climits>
+#include <openacc.h>
 
 using namespace std;
 
-// Estrutura para representar uma topologia
-struct Topology {
+struct Topology
+{
     vector<vector<int>> matrix;
-    int n;
+    int n; // Number of materials
 };
 
-// Função para obter uma topologia com base no identificador fornecido
-Topology getTopology(const string &id) {
-    // Mapeamento de identificadores de topologias para suas configurações
+// Função para obter a topologia desejada
+Topology getTopology(const string &id)
+{
     map<string, Topology> topologies = {
         {"alvo_I", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
         {"alvo_U", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
@@ -26,21 +26,42 @@ Topology getTopology(const string &id) {
         {"alvo_3n_2D_1", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}},
         {"alvo_3n_2D_2", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 2, 2, 2, 1, 0}, {1, 1, 2, 2, 2, 1, 1}, {0, 1, 2, 2, 2, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}}
     };
-
-    // Busca o identificador no mapa
     auto it = topologies.find(id);
-    if (it == topologies.end()) {
-        throw invalid_argument("Topology ID not found: " + id); // Erro se o ID não for encontrado
+    if (it == topologies.end())
+    {
+        throw invalid_argument("Topology ID not found: " + id);
     }
-    return it->second; // Retorna a topologia correspondente
+    return it->second;
 }
 
-// Função para calcular o erro de Hamming entre duas matrizes
-int calcHammingError(const vector<vector<int>> &desired, const vector<vector<int>> &achieved) {
+// Inicializa a matriz de forma aleatória usando paralelização
+void initializeRandomMatrix(vector<vector<int>> &matrix, int maxMaterial)
+{
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(0, maxMaterial - 1);
+
+    #pragma acc parallel loop collapse(2) present(matrix)
+    for (size_t i = 0; i < matrix.size(); ++i)
+    {
+        for (size_t j = 0; j < matrix[i].size(); ++j)
+        {
+            matrix[i][j] = dis(gen);
+        }
+    }
+}
+
+// Calcula o erro Hamming de forma paralela
+int calculateHammingError(const vector<vector<int>> &desired, const vector<vector<int>> &achieved)
+{
     int error = 0;
-    for (size_t i = 0; i < desired.size(); ++i) {
-        for (size_t j = 0; j < desired[0].size(); ++j) {
-            if (desired[i][j] != achieved[i][j]) {
+    #pragma acc parallel loop collapse(2) reduction(+:error)
+    for (size_t i = 0; i < desired.size(); ++i)
+    {
+        for (size_t j = 0; j < desired[i].size(); ++j)
+        {
+            if (desired[i][j] != achieved[i][j])
+            {
                 ++error;
             }
         }
@@ -48,99 +69,91 @@ int calcHammingError(const vector<vector<int>> &desired, const vector<vector<int
     return error;
 }
 
-// Função para executar o algoritmo de colônia de formigas
-void runAntColony(Topology &topo, const Topology &desired) {
-    int numAnts = 10; // Número de formigas
-    int maxCycles = 100; // Número máximo de ciclos
-    double evaporationRate = 0.5; // Taxa de evaporação do feromônio
-    double pheromoneIntensity = 1.0; // Intensidade inicial do feromônio
+// Função principal de otimização
+void runAntColony(const Topology &desired)
+{
+    const int maxCycles = 150;
+    const int numAnts = 80;
+    const double evaporationRate = 0.8;
+    const double pheromoneBoost = 5.0; // Ajuste para reforçar boas soluções
+    int currentCycle = 0;
+    int bestError = INT_MAX;
 
-    int rows = topo.matrix.size();
-    int cols = topo.matrix[0].size();
+    // Inicializa a matriz alcançada com valores aleatórios
+    Topology achieved = desired;
+    initializeRandomMatrix(achieved.matrix, desired.n);
 
-    // Inicializa a matriz de feromônio
-    vector<vector<double>> pheromone(rows, vector<double>(cols, 1.0));
+    // Inicializa os feromônios
+    vector<vector<double>> pheromones(desired.matrix.size(), vector<double>(desired.matrix[0].size(), 1.0));
 
-    vector<vector<int>> bestSolution = topo.matrix;
-    int bestError = calcHammingError(desired.matrix, topo.matrix);
+    // Prepara o arquivo de saída
+    ofstream file("results.csv");
+    file << "Cycle, Error\n";
 
-    srand(time(0)); // Inicializa o gerador de números aleatórios
-
-    #pragma acc data copy(pheromone, topo.matrix)
-    for (int cycle = 0; cycle < maxCycles; ++cycle) {
-        vector<vector<int>> currentSolution = topo.matrix;
-        #pragma acc parallel loop collapse(2)
-        for (int ant = 0; ant < numAnts; ++ant) {
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    // Decisão baseada em probabilidade
-                    double random = (double)rand() / RAND_MAX;
-                    if (random < pheromone[i][j]) {
-                        currentSolution[i][j] = desired.matrix[i][j];
+    #pragma acc data copy(achieved.matrix, pheromones)
+    {
+        while (currentCycle < maxCycles && bestError > 0)
+        {
+            // Construção de soluções pelas formigas
+            #pragma acc parallel loop collapse(3) present(pheromones, achieved)
+            for (int k = 0; k < numAnts; ++k)
+            {
+                for (size_t i = 0; i < achieved.matrix.size(); ++i)
+                {
+                    for (size_t j = 0; j < achieved.matrix[i].size(); ++j)
+                    {
+                        double prob = pheromones[i][j] / (1.0 + pheromones[i][j]);
+                        achieved.matrix[i][j] = (rand() % 100 < prob * 100) ? desired.matrix[i][j] : rand() % desired.n;
                     }
                 }
             }
-        }
 
-        // Calcula o erro de Hamming para a solução atual
-        int currentError = calcHammingError(desired.matrix, currentSolution);
+            // Avalia o erro da matriz alcançada
+            int error = calculateHammingError(desired.matrix, achieved.matrix);
+            if (error < bestError)
+            {
+                bestError = error;
+            }
 
-        // Atualiza a melhor solução
-        if (currentError < bestError) {
-            bestError = currentError;
-            bestSolution = currentSolution;
-        }
-
-        // Atualização do feromônio
-        #pragma acc parallel loop collapse(2)
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
-                pheromone[i][j] *= (1.0 - evaporationRate); // Evaporação
-                if (currentSolution[i][j] == desired.matrix[i][j]) {
-                    pheromone[i][j] += pheromoneIntensity; // Reforço do feromônio
+            // Atualiza os feromônios
+            #pragma acc parallel loop collapse(2) present(pheromones, achieved)
+            for (size_t i = 0; i < pheromones.size(); ++i)
+            {
+                for (size_t j = 0; j < pheromones[i].size(); ++j)
+                {
+                    pheromones[i][j] *= evaporationRate;
+                    if (achieved.matrix[i][j] == desired.matrix[i][j])
+                    {
+                        pheromones[i][j] += pheromoneBoost / (1.0 + bestError);
+                    }
                 }
             }
-        }
 
-        // Verifica se encontrou a solução desejada
-        if (bestError == 0) {
-            break;
-        }
+            // Salva o progresso no arquivo
+            file << currentCycle << ", " << bestError << "\n";
 
-        cout << "Cycle: " << cycle + 1 << ", Best Error: " << bestError << endl;
+            ++currentCycle;
+        }
     }
 
-    // Atualiza a matriz alcançada com a melhor solução encontrada
-    topo.matrix = bestSolution;
+    file.close();
+    cout << "Optimization completed in " << currentCycle << " cycles with error " << bestError << ".\n";
 }
 
-int main() {
-    try {
-        cout << "Enter the topology ID (e.g., 'alvo_I', 'alvo_U'): ";
+int main()
+{
+    try
+    {
+        cout << "Enter the topology ID ('alvo_I', 'alvo_U', 'alvo_G', 'alvo_dama', 'alvo_3n_2D_1', 'alvo_3n_2D_2'): ";
         string id;
         cin >> id;
-        Topology desired = getTopology(id);
-
-        Topology initial = desired; // Pode ser ajustado para começar com uma matriz zerada
-        for (auto &row : initial.matrix) {
-            for (auto &val : row) {
-                val = 0; // Inicializa com valores zerados
-            }
-        }
-
-        runAntColony(initial, desired);
-
-        cout << "Final Solution:" << endl;
-        for (const auto &row : initial.matrix) {
-            for (int val : row) {
-                cout << val << " ";
-            }
-            cout << endl;
-        }
-    } catch (const exception &e) {
+        Topology topo = getTopology(id);
+        runAntColony(topo);
+    }
+    catch (const exception &e)
+    {
         cerr << "Error: " << e.what() << endl;
         return 1;
     }
-
     return 0;
 }

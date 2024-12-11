@@ -58,14 +58,25 @@ def plot_topology(ax, A, title="Topology", cycle=None):
     ax.axis("off")  # Remove os eixos para um visual mais limpo
     plt.draw()
 
+def initialize_random_topology(shape, n):
+    """
+    Inicializa uma matriz de topologia aleatória.
+    shape: Forma da matriz (dimensões)
+    n: Número de materiais disponíveis
+    """
+    return np.random.randint(0, n, size=shape)
+
+
 def aco_optimize(to_alvo, max_cycles=150, ax_goal=None, ax_process=None):
     """
     Implementa a Otimização por Colônia de Formigas para Topologia.
     """
     A, nlA, ncA, pA, n = topology(to_alvo)
-    m = 150  # Número de formigas
+    m = 80  # Número de formigas
     tau = np.ones((n, nlA * ncA * pA)) / n  # Inicializa os feromônios
-    best_topology = np.zeros_like(A)
+
+    # Inicializa a topologia de forma aleatória
+    best_topology = initialize_random_topology(A.shape, n)
     best_error = float("inf")
 
     # Exibe a topologia alvo no gráfico
@@ -130,9 +141,12 @@ def aco_optimize(to_alvo, max_cycles=150, ax_goal=None, ax_process=None):
     plt.xlabel("Cycles")
     plt.ylabel("Error")
     plt.title("Error Evolution during Optimization Execution - 2D")
+    plt.xlim(0, 150)  # Define os limites do eixo X
+    plt.ylim(0, 30)   # Define os limites do eixo Y
     plt.legend()
     plt.grid(True)
     plt.show()
+
 
 def main():
     def start_aco():
