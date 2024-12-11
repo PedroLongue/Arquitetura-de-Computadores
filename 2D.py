@@ -63,7 +63,7 @@ def aco_optimize(to_alvo, max_cycles=150, ax_goal=None, ax_process=None):
     Implementa a Otimização por Colônia de Formigas para Topologia.
     """
     A, nlA, ncA, pA, n = topology(to_alvo)
-    m = 50  # Número de formigas
+    m = 150  # Número de formigas
     tau = np.ones((n, nlA * ncA * pA)) / n  # Inicializa os feromônios
     best_topology = np.zeros_like(A)
     best_error = float("inf")
