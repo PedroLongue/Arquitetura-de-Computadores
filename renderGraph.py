@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Substitua pelo caminho correto para o arquivo CSV
-csv_file_path = 'results_omp.csv'
+csv_file_path = 'results_3D_OpenAcc.csv'
 
 # Leia o CSV
 data = pd.read_csv(csv_file_path)

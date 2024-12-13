@@ -82,7 +82,7 @@ void runAntColony(const Topology &desired)
     vector<vector<double>> pheromones(desired.matrix.size(), vector<double>(desired.matrix[0].size(), 1.0));
 
     // Prepara o arquivo de saída
-    ofstream file("results_omp.csv");
+    ofstream file("results_2D_OpenMP.csv");
     file << "Cycle, Error\n";
 
     while (currentCycle < maxCycles && bestError > 0)

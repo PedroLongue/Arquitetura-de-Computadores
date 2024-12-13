@@ -165,12 +165,12 @@ def plottopology(A, n, fig, ax, *args):
             
             plt.draw()
 
-def aco_optimize_3d(to_alvo, max_cycles=200, ax=None, ax2=None):
+def aco_optimize_3d(to_alvo, max_cycles=150, ax=None, ax2=None):
     """
     Implementa a Otimização por Colônia de Formigas para Topologia 3D.
     """
     A, nlA, ncA, pA, n = topology(to_alvo)
-    m = 50  # Número de formigas
+    m = 80  # Número de formigas
     tau = np.ones((n, nlA * ncA * pA)) / n  # Inicializa os feromônios
     best_topology = None
     best_error = float("inf")
