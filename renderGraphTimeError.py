@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Substitua pelo caminho correto para o arquivo CSV de Tempo e Erro
-csv_file_path = 'time_error_3D_normal.csv'
+csv_file_path = 'time_error_2D_normal.csv'
 
 # Leia o CSV de Tempo e Erro
 data = pd.read_csv(csv_file_path)
