@@ -6,6 +6,7 @@
 #include <climits>
 #include <fstream>
 #include <omp.h>
+#include <chrono>
 
 using namespace std;
 
@@ -28,7 +29,7 @@ Topology3D getTopology3D(const string &id) {
         return {
             {{{2, 2, 1, 1}, {2, 0, 0, 1}, {2, 0, 0, 1}, {2, 2, 1, 1}},
              {{2, 2, 1, 1}, {2, 0, 0, 1}, {2, 0, 0, 1}, {2, 2, 1, 1}},
-             {{2, 2, 1, 1}, {2, 0, 0, 1}, {2, 0, 0, 1}, {2, 2, 1, 1}}},
+             {{2, 2, 1, 1}, {2, 0, 0, 1}, {2, 0, 0, 1}, {2, 2, 1, 1}}}, 
             3, 4, 4, 3
         };
     } else {
@@ -86,11 +87,18 @@ void runAntColony3D(const Topology3D &desired) {
         desired.nl,
         vector<vector<double>>(desired.nc, vector<double>(desired.p, 1.0)));
 
-    // Prepare output file
+    // Prepare output files
     ofstream file("results_3D_OpenMP.csv");
     file << "Cycle,Error\n";
 
+    ofstream fileTimeError("time_error_3D_OpenMP.csv");
+    fileTimeError << "Time(ms),Error\n";
+
+    double totalExecutionTime = 0.0;
+
     while (currentCycle < maxCycles && bestError > 0) {
+        auto start = chrono::high_resolution_clock::now();
+
         vector<vector<vector<int>>> tabu(numAnts,
                                           vector<vector<int>>(desired.nl, vector<int>(desired.nc * desired.p)));
 
@@ -126,15 +134,21 @@ void runAntColony3D(const Topology3D &desired) {
             }
         }
 
-        // Log progress to CSV
+        auto end = chrono::high_resolution_clock::now();
+        chrono::duration<double, milli> execTime = end - start;
+        totalExecutionTime += execTime.count();
+
+        // Log to both CSVs
         file << currentCycle << "," << bestError << "\n";
+        fileTimeError << totalExecutionTime << "," << bestError << "\n";
 
         // Progress output
-        cout << "Cycle: " << currentCycle << ", Error: " << bestError << endl;
+        cout << "Cycle: " << currentCycle << ", Error: " << bestError << ", Execution Time: " << execTime.count() << " ms\n";
         ++currentCycle;
     }
 
     file.close();
+    fileTimeError.close();
     cout << "Optimization completed in " << currentCycle << " cycles with error " << bestError << ".\n";
 }
 

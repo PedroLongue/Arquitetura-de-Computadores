@@ -6,6 +6,7 @@
 #include <random>
 #include <climits>
 #include <openacc.h>
+#include <chrono>
 
 using namespace std;
 
@@ -24,8 +25,10 @@ Topology getTopology(const string &id)
         {"alvo_G", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 1, 0, 0, 0, 0, 0}, {0, 1, 0, 1, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
         {"alvo_dama", {{{0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}}, 2}},
         {"alvo_3n_2D_1", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}},
-        {"alvo_3n_2D_2", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 2, 2, 2, 1, 0}, {1, 1, 2, 2, 2, 1, 1}, {0, 1, 2, 2, 2, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}}
-    };
+        {"alvo_3n_2D_2", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 2, 2, 2, 1, 0}, {1, 1, 2, 2, 2, 1, 1}, {0, 1, 2, 2, 2, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}}};
+        // {"alvo_ccore3_b_complex", {{{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 1, 2, 2, 1, 1, 1, 2, 2, 2, 1, 0, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 0, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 1, 0, 0, 1, 2, 2, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 0, 0, 1, 2, 2, 1, 1, 1, 2, 2, 2, 1, 0, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 0, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 1, 0, 0, 1, 2, 2, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}}, 3}},
+        // {"alvo_ccore3_b_complex_v2", {{{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 2, 2, 1, 0, 1, 2, 2, 2, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 1, 1, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 1, 0, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 1, 1, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 2, 2, 2, 1, 0, 1, 2, 2, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 2, 2, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 1, 2, 0, 0, 1, 1, 0, 0, 2, 1, 2, 2, 1, 2, 2, 1, 1, 1, 1, 2, 2, 1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 2, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 2, 2, 1, 0, 1, 1, 2, 2, 1, 1, 0, 1, 2, 2, 1, 0, 1, 2, 2, 2, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 1, 1, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 1, 0, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 1, 1, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 2, 2, 2, 1, 0, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}}, 3}}};
+        
     auto it = topologies.find(id);
     if (it == topologies.end())
     {
@@ -41,7 +44,7 @@ void initializeRandomMatrix(vector<vector<int>> &matrix, int maxMaterial)
     mt19937 gen(rd());
     uniform_int_distribution<> dis(0, maxMaterial - 1);
 
-    #pragma acc parallel loop collapse(2) present(matrix)
+#pragma acc parallel loop collapse(2) present(matrix)
     for (size_t i = 0; i < matrix.size(); ++i)
     {
         for (size_t j = 0; j < matrix[i].size(); ++j)
@@ -55,7 +58,7 @@ void initializeRandomMatrix(vector<vector<int>> &matrix, int maxMaterial)
 int calculateHammingError(const vector<vector<int>> &desired, const vector<vector<int>> &achieved)
 {
     int error = 0;
-    #pragma acc parallel loop collapse(2) reduction(+:error)
+#pragma acc parallel loop collapse(2) reduction(+ : error)
     for (size_t i = 0; i < desired.size(); ++i)
     {
         for (size_t j = 0; j < desired[i].size(); ++j)
@@ -75,9 +78,10 @@ void runAntColony(const Topology &desired)
     const int maxCycles = 150;
     const int numAnts = 80;
     const double evaporationRate = 0.8;
-    const double pheromoneBoost = 5.0; // Ajuste para reforçar boas soluções
+    const double pheromoneBoost = 5.0;
     int currentCycle = 0;
     int bestError = INT_MAX;
+    double totalExecutionTime = 0.0;
 
     // Inicializa a matriz alcançada com valores aleatórios
     Topology achieved = desired;
@@ -86,16 +90,21 @@ void runAntColony(const Topology &desired)
     // Inicializa os feromônios
     vector<vector<double>> pheromones(desired.matrix.size(), vector<double>(desired.matrix[0].size(), 1.0));
 
-    // Prepara o arquivo de saída
+    // Prepara os arquivos de saída
     ofstream file("results_2D_OpenAcc.csv");
-    file << "Cycle, Error\n";
+    file << "Cycle,Error\n";
 
-    #pragma acc data copy(achieved.matrix, pheromones)
+    ofstream fileTimeError("time_error_2D_OpenAcc.csv");
+    fileTimeError << "Time(ms),Error\n";
+
+#pragma acc data copy(achieved.matrix, pheromones)
     {
         while (currentCycle < maxCycles && bestError > 0)
         {
+            auto start = chrono::high_resolution_clock::now();
+
             // Construção de soluções pelas formigas
-            #pragma acc parallel loop collapse(3) present(pheromones, achieved)
+#pragma acc parallel loop collapse(3) present(pheromones, achieved)
             for (int k = 0; k < numAnts; ++k)
             {
                 for (size_t i = 0; i < achieved.matrix.size(); ++i)
@@ -116,7 +125,7 @@ void runAntColony(const Topology &desired)
             }
 
             // Atualiza os feromônios
-            #pragma acc parallel loop collapse(2) present(pheromones, achieved)
+#pragma acc parallel loop collapse(2) present(pheromones, achieved)
             for (size_t i = 0; i < pheromones.size(); ++i)
             {
                 for (size_t j = 0; j < pheromones[i].size(); ++j)
@@ -129,14 +138,20 @@ void runAntColony(const Topology &desired)
                 }
             }
 
-            // Salva o progresso no arquivo
-            file << currentCycle << ", " << bestError << "\n";
+            auto end = chrono::high_resolution_clock::now();
+            chrono::duration<double, milli> execTime = end - start;
+            totalExecutionTime += execTime.count();
+
+            // Salva o progresso nos arquivos
+            file << currentCycle << "," << bestError << "\n";
+            fileTimeError << totalExecutionTime << "," << bestError << "\n";
 
             ++currentCycle;
         }
     }
 
     file.close();
+    fileTimeError.close();
     cout << "Optimization completed in " << currentCycle << " cycles with error " << bestError << ".\n";
 }
 

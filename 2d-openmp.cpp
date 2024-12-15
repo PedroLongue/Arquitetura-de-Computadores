@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <climits>
 #include <omp.h>
+#include <chrono>
 
 using namespace std;
 
@@ -18,13 +19,12 @@ struct Topology
 Topology getTopology(const string &id)
 {
     map<string, Topology> topologies = {
-            {"alvo_I", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
-            {"alvo_U", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
-            {"alvo_G", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 1, 0, 0, 0, 0, 0}, {0, 1, 0, 1, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
-            {"alvo_dama", {{{0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}}, 2}},
-            {"alvo_3n_2D_1", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}},
-            {"alvo_3n_2D_2", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 2, 2, 2, 1, 0}, {1, 1, 2, 2, 2, 1, 1}, {0, 1, 2, 2, 2, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}}
-        };
+        {"alvo_I", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
+        {"alvo_U", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
+        {"alvo_G", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 1, 0, 0, 0, 0, 0}, {0, 1, 0, 1, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 2}},
+        {"alvo_dama", {{{0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}, {1, 0, 1, 0, 1, 0, 1}, {0, 1, 0, 1, 0, 1, 0}}, 2}},
+        {"alvo_3n_2D_1", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 0, 2, 2, 2, 0}, {0, 1, 1, 1, 0, 2, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}},
+        {"alvo_3n_2D_2", {{{0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 2, 2, 2, 1, 0}, {1, 1, 2, 2, 2, 1, 1}, {0, 1, 2, 2, 2, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0}}, 3}}};
     auto it = topologies.find(id);
     if (it == topologies.end())
     {
@@ -33,10 +33,9 @@ Topology getTopology(const string &id)
     return it->second;
 }
 
-// Inicializa a matriz de forma aleatória
 void initializeRandomMatrix(vector<vector<int>> &matrix, int maxMaterial)
 {
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     for (size_t i = 0; i < matrix.size(); ++i)
     {
         for (size_t j = 0; j < matrix[i].size(); ++j)
@@ -46,11 +45,10 @@ void initializeRandomMatrix(vector<vector<int>> &matrix, int maxMaterial)
     }
 }
 
-// Calcula o erro Hamming de forma paralela
 int calculateHammingError(const vector<vector<int>> &desired, const vector<vector<int>> &achieved)
 {
     int error = 0;
-    #pragma omp parallel for collapse(2) reduction(+:error)
+#pragma omp parallel for collapse(2) reduction(+ : error)
     for (size_t i = 0; i < desired.size(); ++i)
     {
         for (size_t j = 0; j < desired[i].size(); ++j)
@@ -64,7 +62,6 @@ int calculateHammingError(const vector<vector<int>> &desired, const vector<vecto
     return error;
 }
 
-// Otimização usando Colônia de Formigas com OpenMP
 void runAntColony(const Topology &desired)
 {
     const int maxCycles = 150;
@@ -73,21 +70,24 @@ void runAntColony(const Topology &desired)
     const double pheromoneBoost = 5.0;
     int currentCycle = 0;
     int bestError = INT_MAX;
+    double totalExecutionTime = 0.0;
 
-    // Inicializa a matriz alcançada com valores aleatórios
     Topology achieved = desired;
     initializeRandomMatrix(achieved.matrix, desired.n);
 
-    // Inicializa os feromônios
     vector<vector<double>> pheromones(desired.matrix.size(), vector<double>(desired.matrix[0].size(), 1.0));
 
-    // Prepara o arquivo de saída
     ofstream file("results_2D_OpenMP.csv");
-    file << "Cycle, Error\n";
+    file << "Cycle,Error\n";
+
+    ofstream fileTimeError("time_error_2D_OpenMP.csv");
+    fileTimeError << "Time(ms),Error\n";
 
     while (currentCycle < maxCycles && bestError > 0)
     {
-        #pragma omp parallel for collapse(3)
+        auto start = chrono::high_resolution_clock::now();
+
+#pragma omp parallel for collapse(3)
         for (int k = 0; k < numAnts; ++k)
         {
             for (size_t i = 0; i < achieved.matrix.size(); ++i)
@@ -100,10 +100,9 @@ void runAntColony(const Topology &desired)
             }
         }
 
-        // Avalia o erro da matriz alcançada
         int error = calculateHammingError(desired.matrix, achieved.matrix);
 
-        #pragma omp critical
+#pragma omp critical
         {
             if (error < bestError)
             {
@@ -111,8 +110,7 @@ void runAntColony(const Topology &desired)
             }
         }
 
-        // Atualiza os feromônios
-        #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
         for (size_t i = 0; i < pheromones.size(); ++i)
         {
             for (size_t j = 0; j < pheromones[i].size(); ++j)
@@ -125,13 +123,18 @@ void runAntColony(const Topology &desired)
             }
         }
 
-        // Salva o progresso no arquivo
-        file << currentCycle << ", " << bestError << "\n";
+        auto end = chrono::high_resolution_clock::now();
+        chrono::duration<double, milli> execTime = end - start;
+        totalExecutionTime += execTime.count();
+
+        file << currentCycle << "," << bestError << "\n";
+        fileTimeError << totalExecutionTime << "," << bestError << "\n";
 
         ++currentCycle;
     }
 
     file.close();
+    fileTimeError.close();
     cout << "Optimization completed in " << currentCycle << " cycles with error " << bestError << ".\n";
 }
 
