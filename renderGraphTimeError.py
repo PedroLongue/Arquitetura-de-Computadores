@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Substitua pelo caminho correto para o arquivo CSV de Tempo e Erro
-csv_file_path = 'time_error_2D_normal.csv'
+csv_file_path = 'time_error_3D_OpenMP.csv'
 
 # Leia o CSV de Tempo e Erro
 data = pd.read_csv(csv_file_path)
@@ -25,31 +25,31 @@ errors = data['Error']
 if '3D' in csv_file_path and 'OpenAcc' in csv_file_path:
     title = "Error x Time - OpenAcc - 3D"
     xlim = 30
-    ylim = 30
+    ylim = 50
 elif '2D' in csv_file_path and 'OpenAcc' in csv_file_path:
     title = "Error x Time - OpenAcc - 2D"
     xlim = 30
-    ylim = 30
+    ylim = 50
 elif '3D' in csv_file_path and 'OpenMP' in csv_file_path:
     title = "Error x Time - OpenMP - 3D"
     xlim = 30
-    ylim = 30
+    ylim = 50
 elif '2D' in csv_file_path and 'OpenMP' in csv_file_path:
     title = "Error x Time - OpenMP - 2D"
     xlim = 30
-    ylim = 30
+    ylim = 50
 elif '2D' in csv_file_path and 'normal' in csv_file_path:
     title = "Error x Time - 2D"
     xlim = 20000
-    ylim = 30
+    ylim = 50
 elif '3D' in csv_file_path and 'normal' in csv_file_path:
     title = "Error x Time - 3D"
     xlim = 20000
-    ylim = 30
+    ylim = 50
 else:
     title = "Error x Time"
     xlim = 10000
-    ylim = 30
+    ylim = 50
 
 # Plote o gráfico para Tempo e Erro
 plt.figure(figsize=(10, 6))

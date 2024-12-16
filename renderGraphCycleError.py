@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Substitua pelo caminho correto para o arquivo CSV
-csv_file_path = 'results_2D_normal.csv'
+csv_file_path = 'results_3D_OpenMP.csv'
 
 # Leia o CSV
 data = pd.read_csv(csv_file_path)
@@ -44,7 +44,7 @@ plt.xlabel("Cycles")
 plt.ylabel("Error")
 plt.title(title)
 plt.xlim(0, 150)  # Define os limites do eixo X
-plt.ylim(0, 30)   # Define os limites do eixo Y
+plt.ylim(0, 50)   # Define os limites do eixo Y
 plt.legend()
 plt.grid(True)
 plt.show()

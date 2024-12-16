@@ -109,7 +109,7 @@ def topology(to_alvo):
                       [[2], [1], [0], [1], [2], [2], [2], [2], [1], [0], [1], [2]],
                       [[2], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [2]],
                       [[2], [2], [2], [2], [2], [2], [2], [2], [2], [2], [2], [2]]])
-
+    else:
         raise ValueError(f"Topo '{to_alvo}' não implementado.")
     return A, *A.shape, n
 
@@ -187,4 +187,4 @@ def aco_optimize(to_alvo, max_cycles=150, output_cycle_csv="results_2D_normal.cs
 
 if __name__ == "__main__":
     # Escolha o alvo e execute a otimização
-    aco_optimize("alvo_3n_2D_2")
+    aco_optimize("alvo_3n_2D_1")

@@ -160,4 +160,4 @@ def aco_optimize_3d(to_alvo, max_cycles=150, output_cycle_csv="results_3D_normal
 
 if __name__ == "__main__":
     # Execute a otimização para uma topologia específica
-    aco_optimize_3d("alvo_3n_3D_1")
+    aco_optimize_3d("alvo_3n_3D_2")
